@@ -1,136 +1,157 @@
 MANNA - IMY 220 Project, Deliverable 2
 ======================================
-Photo-sharing site for recipes and the verses that go with them.
-React (Vite) frontend  +  Express API  +  MongoDB Atlas (official "mongodb" driver, no Mongoose).
 
-Project layout
-  /backend    Express API. db/ = one file per collection, services/ = business rules,
-              routes/ = thin HTTP layer, seed.js = idempotent demo data
-  /frontend   React app. Uses the native Fetch API against relative /api/... routes only
-  docker-compose.yml, README.txt, .gitignore live at the root
+MANNA is a photo sharing website for recipes and the Bible verses that go with them.
+This deliverable connects the React frontend to an Express API backed by MongoDB Atlas as required in the spec
 
-1. MANUAL SETUP (once)
+Tech used
+  - Frontend: React (Vite), React Router, TailwindCSS v3
+  - Backend: Node.js + ExpressJS
+  - Database: MongoDB Atlas, using the official "mongodb" package (no Mongoose)
+  - Docker + Docker Compose for running everything
+
+Folder structure
+  /backend    Express API. db/ has one file per collection, services/ has the logic,
+              routes/ has the Express routes, seed.js adds the starting data
+  /frontend   React app. All data comes from the API using the native Fetch API
+  docker-compose.yml, README.txt and .gitignore are in the root
+
+
+HOW TO RUN (Docker)
+-------------------
+The database connection string is in backend/.env (included in my submission ZIP).
+The .env is not on GitHub because it has my database password.
+
+Commands I used, run from the project root (the folder with docker-compose.yml):
+
+  docker compose up --build        builds the images and starts both containers
+  docker compose down              stops and removes the containers
+  docker compose down -v           same as above but also deletes the uploads volume
+  docker compose restart backend   restarts the backend (this also re-runs the seed)
+  docker compose exec backend node seed.js    runs the seed by hand
+
+Once it says "Connected to MongoDB Atlas" in the terminal, the site is at:
+
+  http://localhost:8080
+
+The frontend runs in nginx on port 8080 and passes /api and /uploads on to the backend
+container (port 3000). The Dockerfiles are in /backend and /frontend.
+
+If the connection fails, the Atlas Network Access list needs to allow the computer
+running Docker (I set it to 0.0.0.0/0).
+
+
+DATABASE AND SEED DATA
 ----------------------
-Create backend/.env from backend/.env.example and fill in your real values:
+The database is hosted on MongoDB Atlas and is already filled in. The backend also runs
+a seed script every time the container starts. It only adds records that are missing, so
+it never creates duplicates and it never overwrites changes that were made on the site.
 
-  MONGODB_URI=mongodb+srv://<db_user>:<db_password>@<cluster>.mongodb.net/manna?retryWrites=true&w=majority
-  MONGODB_DB=manna
-  JWT_SECRET=<long random string>
-  PORT=3000              (optional)
-  COOKIE_SECURE=false    (set true only behind HTTPS)
+Seeded data: 6 users (1 admin), 7 posts, 3 albums, friendships (one pending request),
+comments, likes, hashtags, 6 report reasons, 1 open report and some messages.
 
-In MongoDB Atlas: the database user must exist and Network Access must allow the machine
-running Docker (0.0.0.0/0 for the demo). .env is read at run time by docker compose and is
-never copied into an image or committed.
-For marking, the connection string must be supplied to the markers (put it in backend/.env
-inside your submission ZIP, or as instructed on ClickUP).
 
-2. RUN WITH DOCKER (one command)
---------------------------------
-  docker compose up --build
+LOGINS (username or email)
+--------------------------
+  Admin   manna_admin     admin@manna.test      Admin123!
+  User    miriam_okafor   miriam@manna.test     Password123!
+  User    david_mensah    david@manna.test      Password123!
+  User    ruth_adeyemi    ruth@manna.test       Password123!
+  User    samuel_obi      samuel@manna.test     Password123!
+  User    esther_kimani   esther@manna.test     Password123!
 
-Then open http://localhost:8080
-Stop with Ctrl+C, or:  docker compose down
-(Uploaded images persist in the named volume "manna_uploads"; remove it with
- docker compose down -v)
+miriam_okafor is the best one to test with. She is already friends with david_mensah
+and ruth_adeyemi, and she has a pending friend request from esther_kimani on her profile.
+Friends are needed for the local feed and for messaging.
 
-3. SEED THE DATABASE
---------------------
-The backend container runs the seed automatically every time it starts. The seed is
-idempotent: it only inserts records that are missing, so re-running never duplicates data.
-Run it by hand any time:
-  docker compose exec backend node seed.js
-Without Docker (needs Node 20.12+ and npm install in /backend):  cd backend && npm run seed
 
-Seeds: 6 users (1 admin), 7 posts, 3 albums, friendships (+1 pending request), comments,
-likes, hashtags, 6 report reasons, 1 open report, direct messages.
+WHAT IS IMPLEMENTED
+-------------------
+  - Sign up, log in and log out
+  - View and edit your own profile, view other profiles, delete your account
+  - Send, cancel, accept and decline friend requests, and unfriend
+  - Create, edit and delete posts (image upload, description, hashtags)
+  - Create, edit and delete albums, and add or remove posts in an album
+  - View posts and albums, like and comment on posts, report posts
+  - Local feed (me + my friends) and global feed (everyone)
+  - Admin page: edit/delete users, posts, albums and comments, and add new report reasons
+  - Extras: search, trending hashtags and messaging between friends
 
-4. DEMO LOGINS (log in with username or email)
-----------------------------------------------
-  ADMIN   manna_admin     admin@manna.test      Admin123!
-  USER    miriam_okafor   miriam@manna.test     Password123!   (friends with david + ruth,
-                                                                has a pending request from esther)
-  USER    david_mensah    david@manna.test      Password123!
-  USER    ruth_adeyemi    ruth@manna.test       Password123!
-  USER    samuel_obi      samuel@manna.test     Password123!
-  USER    esther_kimani   esther@manna.test     Password123!
 
-5. LOCAL DEVELOPMENT (optional, without Docker)
------------------------------------------------
-  cd backend  && npm install && npm start      (port 3000)
-  cd frontend && npm install && npm run dev    (port 5173, proxies /api and /uploads)
+API ROUTES
+----------
+All routes use JSON. Login is stored in an httpOnly cookie.
 
-6. API ROUTES  (all JSON; login is an httpOnly cookie; errors are { ok:false, message })
--------------------------------------------------------------------------------------
 Auth
-  POST   /api/auth/signup                 { username, email, password, confirmPassword }
-  POST   /api/auth/signin  (/login)       { identifier, password }
+  POST   /api/auth/signup
+  POST   /api/auth/signin
   POST   /api/auth/logout
-  GET    /api/auth/me                     current user, or { user: null }
-Users / profiles
-  GET    /api/users/me                    own profile
-  PUT    /api/users/me                    edit name, username, email, bio, avatar, settings,
-                                          or password ({ currentPassword, newPassword, confirmPassword })
-  DELETE /api/users/me                    delete account (cascades posts, albums, comments, friendships)
-  GET    /api/users/:id                   profile + friendship status
+  GET    /api/auth/me
+Users
+  GET    /api/users/me
+  PUT    /api/users/me
+  DELETE /api/users/me
+  GET    /api/users/:id
   GET    /api/users/:id/posts | /albums | /friends
 Friends
-  GET    /api/friends                     my friends
-  GET    /api/friends/requests            incoming + outgoing pending
-  POST   /api/friends/request/:userId     send request
-  POST   /api/friends/accept/:userId      accept
-  POST   /api/friends/decline/:userId     decline
-  DELETE /api/friends/:userId             unfriend / cancel request
+  GET    /api/friends
+  GET    /api/friends/requests
+  POST   /api/friends/request/:userId
+  POST   /api/friends/accept/:userId
+  POST   /api/friends/decline/:userId
+  DELETE /api/friends/:userId
 Posts
-  GET    /api/posts?tag=                  list
-  POST   /api/posts                       { title, text, image, verse:{text,reference}, hashtags }
+  GET    /api/posts
+  POST   /api/posts
   GET    /api/posts/:id
-  PUT    /api/posts/:id                   owner or admin
-  DELETE /api/posts/:id                   owner or admin
-  POST   /api/posts/:id/like   |  DELETE /api/posts/:id/like
+  PUT    /api/posts/:id
+  DELETE /api/posts/:id
+  POST   /api/posts/:id/like  |  DELETE /api/posts/:id/like
 Comments
   GET    /api/posts/:id/comments
-  POST   /api/posts/:id/comments          { text }
-  PUT    /api/comments/:id                { text }  comment owner or admin
-  DELETE /api/comments/:id                comment owner or admin
+  POST   /api/posts/:id/comments
+  PUT    /api/comments/:id
+  DELETE /api/comments/:id
 Albums
-  POST   /api/albums                      { name, description, hashtags }
+  POST   /api/albums
   GET    /api/albums/:id
-  PUT    /api/albums/:id                  owner or admin
-  DELETE /api/albums/:id                  owner or admin
-  POST   /api/albums/:id/posts            { postId }
+  PUT    /api/albums/:id
+  DELETE /api/albums/:id
+  POST   /api/albums/:id/posts
   DELETE /api/albums/:id/posts/:postId
 Reports
   GET    /api/report-reasons
-  POST   /api/posts/:id/report            { reasonId, details }
-  POST   /api/admin/report-reasons        admin: add a reason
-  GET    /api/admin/reports?status=open|resolved
+  POST   /api/posts/:id/report
+  POST   /api/admin/report-reasons
+  GET    /api/admin/reports
   POST   /api/admin/reports/:id/resolve
-Feeds / search / misc
-  GET    /api/feed?scope=local|global     local = you + friends, global = everyone, newest first
-  GET    /api/hashtags/trending?scope=
-  GET    /api/search?q=                   posts (title, text, hashtags, verse) + people
-  POST   /api/uploads                     multipart field "image" (JPG/PNG/GIF/WebP, 5 MB) -> { url }
-  GET    /uploads/<file>                  served images
-  GET    /api/messages | /api/messages/:userId | POST /api/messages/:userId
-Admin (administrators only)
+Feed, search and messages
+  GET    /api/feed?scope=local|global
+  GET    /api/hashtags/trending
+  GET    /api/search?q=
+  POST   /api/uploads
+  GET    /api/messages  |  GET and POST /api/messages/:userId
+Admin
   GET    /api/admin/users | /posts | /albums | /comments | /activity
-  PUT    /api/admin/users/:id             edit any account (incl. role)
+  PUT    /api/admin/users/:id
   DELETE /api/admin/users/:id
-  (admins can also edit/delete any post, album and comment through the normal routes)
-  GET    /api/health
 
-7. NOTES
---------
-- Frontend styling uses TailwindCSS v3 (tailwind.config.js holds the MANNA palette, fonts, radii and
-  shadow as theme tokens; the shared design system in src/index.css and several component stylesheets
-  are written with Tailwind @apply). Tailwind's default font stacks are overridden with Playfair Display
-  and Nunito Sans (bundled with @fontsource), and every input/select/textarea/button uses the MANNA body
-  font, so no default Tailwind or browser fonts appear. Tailwind preflight is switched off so the
-  original D1 look is unchanged.
-- Console-clean errors: the frontend sends the header "X-Soft-Errors: 1". For those requests the API
-  returns failures as HTTP 200 { ok:false, message, status } so handled errors (wrong password,
-  validation) never appear as red console errors. Postman/curl without the header get real 4xx/5xx codes.
-- Images that fail to load (e.g. a remote seed photo) fall back to a local MANNA placeholder.
-- Passwords are hashed with bcryptjs. Sessions are JWTs in an httpOnly cookie.
-- Submission ZIP (per the spec) also needs a text file with your GitHub link.
+
+NOTES
+-----
+Styling: I used TailwindCSS with my own colours, fonts, border radius and shadow set up as
+theme values in tailwind.config.js. Tailwind's default fonts are replaced with Playfair
+Display (headings) and Nunito Sans (body), both installed through @fontsource, and inputs
+and buttons use the same body font so no default browser fonts show up. Preflight is turned
+off so my D1 layout stayed the same. No templates or component libraries were used.
+
+Console errors: browsers log every 4xx/5xx fetch as a red console error, even when the app
+handles it (for example a wrong password). To keep the console clean, my frontend sends the
+header "X-Soft-Errors: 1", and then the API returns errors as HTTP 200 with
+{ ok: false, message, status }. Requests without that header (Postman, curl) get the normal
+4xx/5xx status codes.
+
+Other:
+  - Passwords are hashed with bcryptjs
+  - Images that fail to load fall back to a local placeholder image
+  - Uploaded images are saved in a Docker volume called manna_uploads
