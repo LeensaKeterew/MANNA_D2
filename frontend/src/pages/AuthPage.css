@@ -1,0 +1,85 @@
+.auth-page {
+  height: 100vh;
+  overflow:hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+}
+
+.auth-logo {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--color-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  overflow: hidden;
+}
+
+.auth-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.auth-card h1 {
+  font-size: 1.6rem;
+  margin-bottom: 4px;
+}
+
+.auth-subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 28px;
+}
+
+.auth-form {
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+.auth-link-row {
+  margin-top: 16px;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+}
+
+.auth-forgot {
+  display: block;
+  text-align: left;
+  font-size: 0.85rem;
+  margin: -10px 0 20px;
+}
+
+.auth-error {
+  background: #f6dede;
+  color: #8a2f2f;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+.auth-page-bg {
+  background-image: url("/register.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.auth-page-bg .auth-card {
+  background: var(--color-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 28px 32px;   /* was 36px 32px */
+}
