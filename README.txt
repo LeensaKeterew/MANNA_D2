@@ -155,3 +155,5 @@ Other:
   - Passwords are hashed with bcryptjs
   - Images that fail to load fall back to a local placeholder image
   - Uploaded images are saved in a Docker volume called manna_uploads
+
+GitHub Link: https://github.com/LeensaKeterew/MANNA_D2.git
